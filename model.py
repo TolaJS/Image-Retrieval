@@ -8,38 +8,42 @@ description:
 import torch
 import torch.nn as nn
 from torchvision import models
+  
 
-
-class NeuralNet(nn.Model):
-    """_summary_
-
-    Args:
-        nn (_type_): _description_
-    """
-    
-    def __init__(self,freeze_weights: bool=True):
-        super(NeuralNet, self).__init__()
-        self.model = models.resnet50(weights = "IMAGENET1K_V2")
+class EmbeddingNet(nn.Module):
+    def __init__(self, model:nn.Module, embedding_dim=128, freeze_weights=True):
+        super(EmbeddingNet, self).__init__()
+        self.model = model
         
         if freeze_weights:
             for param in self.model.parameters():
                 param.requires_grad = False
-        
-        self.model = nn.Sequential(*list(self.model.children())[:-1])
-    
-    def forward(self, x):
-        return self.model(x)
-    
 
-class EmbeddingNet(nn.Model):
-    def __init__(self, backbone, embedding_dim=128):
-        super(EmbeddingNet, self).__init__()
-        self.backbone = backbone
-        self.embedding_dim = embedding_dim
+        if isinstance(self.model, models.ResNet):
+            num_features = self.model.fc.in_features
+            self.model.fc = nn.Identity
+            
+        if isinstance(self.model, models.GoogLeNet):
+            num_features = self.model.fc.in_features
+            self.model.fc = nn.Identity()
+            
+        elif isinstance(self.model, models.EfficientNet):
+            num_features = self.model.classifier[1].in_features
+            self.model.classifier = nn.Identity()
+            
+        else:
+            raise ValueError("Unsupported model type: Model is meant for torchvison's GoogLeNet, Inception3, ResNet or EfficientNet")
         
+        self.avgpool = nn.AdaptiveAvgPool2d((1,1))
+        self.fc = nn.Linear(num_features, embedding_dim)
+    
+    def forward(self,x):
+        x = self.model(x)
+        if isinstance(x, tuple):
+            x = x[0]
+            
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
         
-        dummy_input = torch.randn(1, 3, 224, 224)  # Adjust size if needed
-        with torch.no_grad():
-            output = self.backbone(dummy_input)
-        num_features = output.shape[1]
-        
+        return x   
