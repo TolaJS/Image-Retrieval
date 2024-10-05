@@ -8,6 +8,8 @@ description:
 import torch
 import torch.nn as nn
 from torchvision import models
+from utils import get_model_info
+nn.
   
 
 class EmbeddingNet(nn.Module):
@@ -19,21 +21,7 @@ class EmbeddingNet(nn.Module):
             for param in self.model.parameters():
                 param.requires_grad = False
 
-        if isinstance(self.model, models.ResNet):
-            num_features = self.model.fc.in_features
-            self.model.fc = nn.Identity
-            
-        if isinstance(self.model, models.GoogLeNet):
-            num_features = self.model.fc.in_features
-            self.model.fc = nn.Identity()
-            
-        elif isinstance(self.model, models.EfficientNet):
-            num_features = self.model.classifier[1].in_features
-            self.model.classifier = nn.Identity()
-            
-        else:
-            raise ValueError("Unsupported model type: Model is meant for torchvison's GoogLeNet, Inception3, ResNet or EfficientNet")
-        
+        self.model, num_features = get_model_info(self.model)
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
         self.fc = nn.Linear(num_features, embedding_dim)
     
