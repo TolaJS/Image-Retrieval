@@ -23,7 +23,6 @@ class ProjectDataset:
     def __init__(self, mode, root_dir):
         
         self.mode = mode
-        self.root_dir = root_dir
         self.dataset = ModifiedImageFolder(root=root_dir, transform=self.data_transforms())
     
     

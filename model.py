@@ -8,8 +8,7 @@ description:
 import torch
 import torch.nn as nn
 from torchvision import models
-from utils import get_model_info
-nn.
+from utils.utils import get_model_info
   
 
 class EmbeddingNet(nn.Module):
