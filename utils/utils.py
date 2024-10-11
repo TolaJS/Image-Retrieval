@@ -20,7 +20,7 @@ def set_seed(seed_value):
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed_value)
         torch.cuda.manual_seed_all(seed_value)  # if you are using multi-GPU.
-    print(f"Random seed set to: {seed_value}")
+    # print(f"Random seed set to: {seed_value}")
 
 
 def get_model_info(model:torch.nn.Module):
@@ -37,14 +37,17 @@ def get_model_info(model:torch.nn.Module):
         model.classifier = torch.nn.Identity()
         
     else:
-        raise ValueError("Unsupported model type: Model is meant for torchvison's GoogLeNet, Inception3, ResNet or EfficientNet")
+        raise ValueError(
+            f"Unsupported model type: Model is meant for torchvison's "
+            f"GoogLeNet, Inception3, ResNet or EfficientNet")
     
     return model, num_features
 
 
-def format_log_message(mode, i, epoch, train_loss, val_loss):
+def format_log_message(i, epoch, train_loss, val_loss):
     """Log formatting function."""
-    return f'| Mode:{mode:<5} | Iter:{i:5.1f} | Epoch:{epoch}/{args.epochs} | Train_Loss:{train_loss:8.3f} | Validation_Loss:{val_loss:8.3f}'
+    return (f'| Epoch:{epoch+1}/{args.epochs} | Train_Loss:{train_loss:8.3f} | '
+            f'Val_Loss:{val_loss:8.3f}')
 
 
 def print_summary(logger, name, train_size, val_size, test_size):
@@ -56,4 +59,3 @@ def print_summary(logger, name, train_size, val_size, test_size):
     logger.info(f'# Test size: {test_size}')
     logger.info(f'# Epochs: {args.epochs}')
     logger.info('*'*41+'\n')
-    
