@@ -26,17 +26,18 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('Log')
 
 
-def train(train_laoder, model, criterion, optimizer, scaler, device, scheduler):
+def train(train_loader, model, criterion, optimizer, scaler, device, scheduler):
     model.train()
     losses = AverageMeter()
 
-    for i, (images, labels) in enumerate(train_laoder):
+    for images, labels, _, _ in train_loader:
         images, labels = images.to(device), labels.to(device)
 
         optimizer.zero_grad()
 
-        with torch.amp.autocast():
+        with torch.amp.autocast(str(device)):
             outputs = model(images)
+            outputs = outputs.float()
             loss = criterion(outputs, labels)
 
         scaler.scale(loss).backward()
@@ -54,27 +55,28 @@ def evaluate(val_loader, model, criterion, device):
     losses = AverageMeter()
 
     with torch.no_grad():
-        for images, labels in val_loader:
+        for images, labels, _, _ in val_loader:
             images, labels = images.to(device), labels.to(device)
 
-            with torch.amp.autocast:
+            with torch.amp.autocast(str(device)):
                 outputs = model(images)
+                outputs = outputs.float()
                 loss = criterion(outputs, labels)
 
-            losses.update(loss.item(), images.size())
+            losses.update(loss.item(), images.size(0))
     return losses.avg
 
 
 def main():
-    train_data = ProjectDataset(mode='train', root_dir='')  #todo dataset path
+    train_data = ProjectDataset(mode='train', root_dir='dataset/Train')  # todo dataset path
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
     train_len = len(train_loader.dataset)
 
-    val_data = ProjectDataset(mode='val', root_dir='')
+    val_data = ProjectDataset(mode='val', root_dir='dataset/Train')
     val_loader = DataLoader(val_data, batch_size=args.batch_size, shuffle=False)
     val_len = len(val_loader.dataset)
 
-    test_data = ProjectDataset(mode='test', root_dir='')
+    test_data = ProjectDataset(mode='test', root_dir='dataset/', csv_root='dataset/test.csv')
     test_loader = DataLoader(test_data, batch_size=args.batch_size, shuffle=False)
     test_len = len(test_loader.dataset)
 
@@ -88,7 +90,7 @@ def main():
     pretrained_model = models.resnet50(weights="IMAGENET1K_V2")
     model = EmbeddingNet(model=pretrained_model)
     model.to(device)
-    model_name = model.model.__class__.__name_
+    model_name = model.model.__class__.__name__
 
     if not os.path.exists("./checkpoint/"):
         os.mkdir("./checkpoint/")
@@ -100,8 +102,7 @@ def main():
     )
 
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.gamma)
-    # criterion = torch.nn.CrossEntropyLoss()
-    criterion = TripletLoss
+    criterion = TripletLoss()
     scaler = torch.cuda.amp.GradScaler()
 
     log_dir = (f"logs/runs/"
@@ -113,7 +114,7 @@ def main():
     handler = logging.FileHandler(f'{log_dir}/log.txt')
     logger.addHandler(handler)
 
-    if args.eval:
+    if args.eval_mode:
         if args.model_path:
             model.load_state_dict(torch.load(args.model_path))
             model.to(device)
@@ -124,8 +125,10 @@ def main():
         logger.info("Validation Loss: {:.2f}".format(val_loss))
     else:
 
+        print_summary(logger, model_name, train_len, val_len, test_len)
+        logger.info("=> Start Training")
         for epoch in range(args.epochs):
-            train_loss = train(train_loader, model, criterion, optimizer, scaler, device, epoch, scheduler)
+            train_loss = train(train_loader, model, criterion, optimizer, scaler, device, scheduler)
             val_loss = evaluate(val_loader, model, criterion, device)
 
             writer.add_scalar('Train/Loss', train_loss, epoch)
