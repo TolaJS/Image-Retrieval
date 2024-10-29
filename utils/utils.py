@@ -40,7 +40,7 @@ def get_model_and_features(model: torch.nn.Module):
     return model, out_features
 
 
-def format_log_message(i, epoch, train_loss, val_loss):
+def format_log_message(epoch, train_loss, val_loss):
     """Log formatting function."""
     return (f'| Epoch:{epoch + 1}/{args.epochs} | Train_Loss:{train_loss:8.3f} | '
             f'Val_Loss:{val_loss:8.3f}')
