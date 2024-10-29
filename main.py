@@ -68,7 +68,7 @@ def evaluate(val_loader, model, criterion, device):
 
 
 def main():
-    train_data = ProjectDataset(mode='train', root_dir='dataset/Train')  # todo dataset path
+    train_data = ProjectDataset(mode='train', root_dir='dataset/Train')
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
     train_len = len(train_loader.dataset)
 
@@ -88,7 +88,7 @@ def main():
         device = torch.device("cpu")
 
     pretrained_model = models.resnet50(weights="IMAGENET1K_V2")
-    model = EmbeddingNet(model=pretrained_model)
+    model = EmbeddingNet(model=pretrained_model, freeze_weights=False)
     model.to(device)
     model_name = model.model.__class__.__name__
 
