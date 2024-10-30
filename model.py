@@ -8,7 +8,7 @@ description:
 import torch
 import torch.nn as nn
 from torchvision import models
-from utils.utils import get_model_and_features
+from utils.utils import modify_fc_layer
 
 
 class EmbeddingNet(nn.Module):
@@ -20,9 +20,7 @@ class EmbeddingNet(nn.Module):
             for param in self.model.parameters():
                 param.requires_grad = False
 
-        self.model, out_features = get_model_and_features(self.model)
-        if embedding_dim is not None:   # To experiment with different dimensional feature vectors
-            self.model.fc = nn.Linear(out_features, embedding_dim)
+        self.model = modify_fc_layer(self.model, embedding_dim=embedding_dim)
     
     def forward(self, x):
         x = self.model(x)

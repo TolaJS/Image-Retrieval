@@ -23,21 +23,27 @@ def set_seed(seed_value):
     # print(f"Random seed set to: {seed_value}")
 
 
-def get_model_and_features(model: torch.nn.Module):
+def modify_fc_layer(model: torch.nn.Module, embedding_dim: int):
     if isinstance(model, (models.ResNet, models.GoogLeNet, models.Inception3)):
         out_features = model.fc.in_features
-        model.fc = torch.nn.Identity()
+        if embedding_dim is not None:   # To experiment with different dimensional feature vectors
+            model.fc = torch.nn.Linear(out_features, embedding_dim)
+        else:
+            model.fc = torch.nn.Identity()
 
     elif isinstance(model, models.EfficientNet):
         out_features = model.classifier[1].in_features
-        model.classifier = torch.nn.Identity()
+        if embedding_dim is not None:
+            model.classifier = torch.nn.Linear(out_features, embedding_dim)
+        else:
+            model.classifier = torch.nn.Identity()
 
     else:
         raise ValueError(
             f"Unsupported model type: Model is meant for torchvison's "
             f"GoogLeNet, Inception3, ResNet or EfficientNet")
 
-    return model, out_features
+    return model
 
 
 def format_log_message(epoch, train_loss, val_loss):
