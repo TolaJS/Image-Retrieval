@@ -95,15 +95,16 @@ def main():
     if not os.path.exists("./checkpoint/"):
         os.mkdir("./checkpoint/")
 
-    optimizer = torch.optim.Adam(
+    optimizer = torch.optim.SGD(
         params=model.parameters(),
         lr=args.lr,
-        weight_decay=args.weight_decay
+        momentum=0.9,  # Can be added to args.py as a hyperparameter
+        nesterov=False  # optional
     )
 
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.gamma)
     criterion = TripletLoss()
-    scaler = torch.cuda.amp.GradScaler()
+    scaler = torch.amp.GradScaler()
 
     log_dir = (f"logs/runs/"
                f"{model_name}/"
